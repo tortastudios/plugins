@@ -1,0 +1,37 @@
+{
+  "name": "proofmarks",
+  "displayName": "Proofmarks",
+  "version": "0.1.2",
+  "description": "Marks what reads like AI slop on your page, says why, and rewrites it with the agent you already use.",
+  "author": {
+    "name": "Torta Studios",
+    "url": "https://tortastudios.com"
+  },
+  "homepage": "https://proofmarks.dev",
+  "repository": "https://github.com/tortastudios/proofmarks",
+  "license": "FSL-1.1-MIT",
+  "keywords": [
+    "writing",
+    "proofreading",
+    "editing",
+    "ai-slop",
+    "linter",
+    "mcp"
+  ],
+  "icon": "./assets/proofmarks.png",
+  "channels": [
+    {
+      "server": "proofmarks",
+      "displayName": "Proofmarks"
+    }
+  ],
+  "network": {
+    "hosts": [
+      "proofmarks-relay.tortastudios.com",
+      "api.typesafe.ai",
+      "registry.npmjs.org",
+      "proofmarks.dev",
+      "github.com"
+    ]
+  }
+}

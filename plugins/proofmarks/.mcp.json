@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "proofmarks": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@tortastudios/proofmarks",
+        "mcp"
+      ],
+      "env": {
+        "PROOFMARKS_VIA": "torta-plugins"
+      }
+    }
+  }
+}
