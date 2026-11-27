@@ -1,8 +1,9 @@
 name: Sync
 
-# Each day, and when run by hand, brings each plugin's folder up to its product's latest release and opens a pull
-# request for the change. A pull request opened with this workflow's token doesn't start other workflows, so this job
-# runs the catalog's checks itself first, then starts Check on the branch, which shows on the pull request.
+# Each day, and when run by hand, brings each plugin's folder up to its product's latest release on a sync/ branch. The
+# organization doesn't let workflows open pull requests, so the job runs the catalog's checks, pushes the branch,
+# starts Check on it and leaves the link to open one. A branch pushed with this workflow's token doesn't start other
+# workflows; workflow_dispatch is the exception.
 on:
   schedule:
     - cron: "17 9 * * *"
@@ -10,7 +11,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
   actions: write
 
 jobs:
@@ -42,7 +42,7 @@ jobs:
           claude plugin validate .
           claude plugin validate plugins/${{ matrix.plugin }} --profile directory --strict
           node scripts/check.mjs
-      - name: Open a pull request, unless one is open for this version
+      - name: Push the branch, unless it's there already, and start Check on it
         if: steps.sync.outputs.version
         env:
           GH_TOKEN: ${{ github.token }}
@@ -50,8 +50,8 @@ jobs:
           VERSION: ${{ steps.sync.outputs.version }}
         run: |
           branch="sync/$PLUGIN-$VERSION"
-          if [ -n "$(gh pr list --head "$branch" --json number --jq '.[].number')" ]; then
-            echo "::notice::A pull request for $PLUGIN $VERSION is already open."
+          if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            echo "::notice::$branch is already pushed."
             exit 0
           fi
           git config user.name "github-actions[bot]"
@@ -60,7 +60,5 @@ jobs:
           git add -A "plugins/$PLUGIN"
           git commit -m "$PLUGIN $VERSION: its skills, license and version from the release"
           git push origin "$branch"
-          gh pr create --base main --head "$branch" \
-            --title "$PLUGIN $VERSION" \
-            --body "Brings plugins/$PLUGIN up to the $VERSION release: its skills, license and the version in both manifests. The sync job ran the catalog's checks before opening this; Check runs on the branch too."
           gh workflow run check.yml --ref "$branch"
+          echo "::notice::$PLUGIN $VERSION is on $branch. Open its pull request: https://github.com/$GITHUB_REPOSITORY/compare/main...$branch?expand=1"
