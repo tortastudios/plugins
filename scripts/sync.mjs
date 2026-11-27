@@ -7,7 +7,10 @@ import os from 'node:os';
 import path from 'node:path';
 
 // Each product's public repository, and what its folder copies from a release.
-const sources = { proofmarks: { repo: 'tortastudios/proofmarks', copy: ['skills', 'LICENSE.md'] } };
+// npm names the package an MCP server's launcher runs, so the pin in .mcp.json moves with the version.
+const sources = {
+  proofmarks: { repo: 'tortastudios/proofmarks', copy: ['skills', 'LICENSE.md'], npm: '@tortastudios/proofmarks' },
+};
 
 const name = process.argv[2];
 const source = sources[name];
@@ -45,6 +48,15 @@ try {
     const manifest = JSON.parse(await readFile(file, 'utf8'));
     manifest.version = version;
     await writeFile(file, JSON.stringify(manifest, null, 2) + '\n');
+  }
+  if (source.npm) {
+    const file = path.join(folder, '.mcp.json');
+    const config = JSON.parse(await readFile(file, 'utf8'));
+    for (const server of Object.values(config.mcpServers))
+      server.args = server.args?.map(arg =>
+        arg === source.npm || arg.startsWith(`${source.npm}@`) ? `${source.npm}@${version}` : arg,
+      );
+    await writeFile(file, JSON.stringify(config, null, 2) + '\n');
   }
 } finally {
   await rm(temp, { recursive: true, force: true });
