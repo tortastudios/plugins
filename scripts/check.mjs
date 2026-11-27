@@ -47,6 +47,19 @@ for (const entry of codex.plugins) {
   );
   for (const named of new Set(paths))
     if (!(await exists(path.join(folder, named)))) problems.push(`${label}: ${named} is named but missing.`);
+  // Anthropic's directory refuses a launcher that runs a package without an exact version, such as npx -y name.
+  const mcp = path.join(folder, '.mcp.json');
+  if (await exists(mcp))
+    for (const [server, entry] of Object.entries((await read(mcp)).mcpServers ?? {}))
+      if (['npx', 'uvx', 'bunx', 'pnpx'].includes(path.basename(entry.command ?? ''))) {
+        const target = (entry.args ?? []).find(arg => !arg.startsWith('-'));
+        const pinned = target?.match(/^(@?[^@]+)(?:@|==)(\d+\.\d+\.\d+[\w.+-]*)$/);
+        if (!pinned) problems.push(`${label}: ${server} runs ${target} without an exact version.`);
+        else if (pinned[2] !== manifests['.claude-plugin']?.version)
+          problems.push(
+            `${label}: ${server} runs ${pinned[2]}, but the plugin is ${manifests['.claude-plugin']?.version}.`,
+          );
+      }
   for (const [what, files] of [
     ['a README', ['README.md']],
     ['a license', ['LICENSE', 'LICENSE.md']],
