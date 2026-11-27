@@ -1,7 +1,7 @@
 {
   "name": "proofmarks",
   "displayName": "Proofmarks",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Marks what reads like AI slop on your page, says why, and rewrites it with the agent you already use.",
   "author": {
     "name": "Torta Studios",
