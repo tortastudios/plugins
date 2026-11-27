@@ -1,0 +1,20 @@
+{
+  "name": "tortastudios",
+  "interface": {
+    "displayName": "Torta Studios"
+  },
+  "plugins": [
+    {
+      "name": "proofmarks",
+      "source": {
+        "source": "local",
+        "path": "./plugins/proofmarks"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
