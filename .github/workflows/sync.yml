@@ -1,0 +1,66 @@
+name: Sync
+
+# Each day, and when run by hand, brings each plugin's folder up to its product's latest release and opens a pull
+# request for the change. A pull request opened with this workflow's token doesn't start other workflows, so this job
+# runs the catalog's checks itself first, then starts Check on the branch, which shows on the pull request.
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  sync:
+    name: sync ${{ matrix.plugin }} with its latest release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: [proofmarks]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Copy the latest release into the folder
+        id: sync
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "version=$(node scripts/sync.mjs ${{ matrix.plugin }})" >> "$GITHUB_OUTPUT"
+      - name: Install Claude Code
+        if: steps.sync.outputs.version
+        run: npm install --global @anthropic-ai/claude-code@2.1.332
+      - name: The updated folder passes the catalog's checks
+        if: steps.sync.outputs.version
+        run: |
+          claude plugin validate .
+          claude plugin validate plugins/${{ matrix.plugin }} --profile directory --strict
+          node scripts/check.mjs
+      - name: Open a pull request, unless one is open for this version
+        if: steps.sync.outputs.version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PLUGIN: ${{ matrix.plugin }}
+          VERSION: ${{ steps.sync.outputs.version }}
+        run: |
+          branch="sync/$PLUGIN-$VERSION"
+          if [ -n "$(gh pr list --head "$branch" --json number --jq '.[].number')" ]; then
+            echo "::notice::A pull request for $PLUGIN $VERSION is already open."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -A "plugins/$PLUGIN"
+          git commit -m "$PLUGIN $VERSION: its skills, license and version from the release"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "$PLUGIN $VERSION" \
+            --body "Brings plugins/$PLUGIN up to the $VERSION release: its skills, license and the version in both manifests. The sync job ran the catalog's checks before opening this; Check runs on the branch too."
+          gh workflow run check.yml --ref "$branch"

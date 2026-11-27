@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The sync job starts it on the branches it opens pull requests from.
+  workflow_dispatch:
 
 permissions:
   contents: read
